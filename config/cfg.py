@@ -17,9 +17,8 @@ def log() -> Logger:
     return _LOGGER
 
 
-GCP_PROJECT = environ.get("GCP_PROJECT", "your-project-id")
-GCP_PROJECT_NUMBER = environ.get("GCP_PROJECT_NUMBER", "123456789")  # needed for secret Mgr
-GCS_DEFAULT_BUCKET = environ.get("GCS_DEFAULT_BUCKET", "your-default-bucket.appspot.com")
+GCP_PROJECT = environ.get("GCP_PROJECT", "your-project-id")  # todo set your project id
+GCP_PROJECT_NUMBER = environ.get("GCP_PROJECT_NUMBER", "123456789")  # todo set your project number (for secret manager)
 
 
 def secret_mgr_get_secret(secret_id: str):
@@ -29,4 +28,3 @@ def secret_mgr_get_secret(secret_id: str):
     response = client.access_secret_version(request={"name": name})
     decoded = response.payload.data.decode("UTF-8")
     return decoded
-
