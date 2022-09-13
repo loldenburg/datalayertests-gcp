@@ -1,0 +1,26 @@
+steps:
+  - name: 'google/cloud-sdk:slim'
+    id: 'Deploy Data Layer Testing GCF'
+    entrypoint: 'gcloud'
+    waitFor:
+      - '-'
+    args: [
+        'functions', 'deploy', 'data-layer-testing',
+        '--source', 'https://source.developers.google.com/projects/${PROJECT_ID}/repos/${REPO_NAME}/moveable-aliases/${BRANCH_NAME}/paths/data_layer_collector',
+        '--runtime', 'python38',
+        '--trigger-http',
+        '--allow-unauthenticated',
+        '--set-env-vars', 'GCP_REGION=${_REGION},GCP_PROJECT=${PROJECT_ID},GCS_PRIVATE_BUCKET=${_GCS_PRIVATE_BUCKET},GCS_PUBLIC_BUCKET=${_GCS_PUBLIC_BUCKET},GCS_DEFAULT_BUCKET=${_GCS_DEFAULT_BUCKET}',
+        '--entry-point', 'data_layer_collector',
+        '--project', '${PROJECT_ID}',
+        '--timeout', '540s',
+        '--memory', '256MB',
+        '--region', '${_REGION}',
+        '--service-account', '${_SERVICE_ACCOUNT}'
+    ]
+timeout: 1200s
+substitutions:
+  _SERVICE_NAME: "data-layer-testing"
+
+options:
+  logging: 'CLOUD_LOGGING_ONLY'
