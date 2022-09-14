@@ -5,12 +5,12 @@ steps:
     waitFor:
       - '-'
     args: [
-        'functions', 'deploy', 'data-layer-testing',
+        'functions', 'deploy', 'data-layer-tests',
         '--source', 'https://source.developers.google.com/projects/${PROJECT_ID}/repos/${REPO_NAME}/moveable-aliases/${BRANCH_NAME}/paths/data_layer_collector',
-        '--runtime', 'python38',
+        '--runtime', 'python39',
         '--trigger-http',
         '--allow-unauthenticated',
-        '--set-env-vars', 'GCP_REGION=${_REGION},GCP_PROJECT=${PROJECT_ID},GCS_PRIVATE_BUCKET=${_GCS_PRIVATE_BUCKET},GCS_PUBLIC_BUCKET=${_GCS_PUBLIC_BUCKET},GCS_DEFAULT_BUCKET=${_GCS_DEFAULT_BUCKET}',
+        '--set-env-vars', 'GCP_REGION=${_REGION},GCP_PROJECT=${PROJECT_ID}',
         '--entry-point', 'data_layer_collector',
         '--project', '${PROJECT_ID}',
         '--timeout', '540s',
@@ -20,7 +20,7 @@ steps:
     ]
 timeout: 1200s
 substitutions:
-  _SERVICE_NAME: "data-layer-testing"
+  _SERVICE_NAME: "datalayer-tests-push"
 
 options:
   logging: 'CLOUD_LOGGING_ONLY'

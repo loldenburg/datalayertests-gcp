@@ -20,9 +20,6 @@ def log() -> Logger:
     return _LOGGER
 
 
-token = cfg.secret_mgr_get_secret("error-log-token")
-
-
 def test_me(request: Request):
     """Just for testing if Cloud Function is working at all. Switch to main_handler later"""
     return jsonify({"message": "test_me ran successfully"}), HTTPStatus.OK
@@ -32,6 +29,7 @@ def main_handler(request: Request):
     """
     Barebone function. Receives a payload and routes it to a script of your choice
     """
+    log().info("Starting main_handler")
     run_id = "R" + str(datetime.now().strftime("%y%m%d-%H%M%S-%f")[:-3])  # gets a timestamp with milliseconds
     cfg.SCRIPT_RUN_ID = run_id
     request_json = request.get_json()
@@ -47,6 +45,7 @@ def main_handler(request: Request):
     log().info(f"Request body: {request_json}")
 
     if request_json and "token" in request_json:
+        token = cfg.secret_mgr_get_secret("error-log-token")
         if request_json.get("token") == token:
             if script == "log_datalayer_error":
                 log_datalayer_error(payload=event_payload)

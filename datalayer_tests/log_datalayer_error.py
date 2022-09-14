@@ -30,12 +30,15 @@ def run_script(payload=None):
     data_layer = payload.get("dataLayer")
     error_data = payload.get("errorData").get("data")
     event_name = payload.get("eventName", "event_name missing")
-    user_id = data_layer.get("toolAA_mcid_or_teal_vis_id", "missing") # todo change to your visitor ID
-    url_full = data_layer.get("url_full", "url_full missing") # todo change to the UDO variable that contains the URL
-    prod_id = data_layer.get("prod_id", []) # todo change to the UDO variable that contains the product ID (or leave out)
+    user_id = data_layer.get("tealium_visitor_id",
+                             "missing")  # todo change to your preferred user ID for debugging (by default: Tealium Cookie ID)
+    url_full = data_layer.get("url_full", "url_full missing")  # todo change to the UDO variable that contains the URL
+    prod_id = data_layer.get("prod_id",
+                             [])  # todo change to the UDO variable that contains the product ID (or leave out)
     prod_id = safe_get_index(prod_id, 0, None)
     tealium_profile = data_layer.get("tealium_profile", "missing")
     logged_at = DatetimeWithNanoseconds.now(timezone.utc)
+    # create ID that is decreasing over time so that the most recent errors are at the top of the list in Firestore
     jan1_2100 = time.mktime((date(2100, 1, 1)).timetuple())
     logged_at_ts = time.mktime(logged_at.timetuple())
     decreasing_ts = int(jan1_2100 - logged_at_ts)
@@ -65,7 +68,7 @@ def run_script(payload=None):
         "loggedAt": logged_at,
         "prod_id": prod_id,
         "url_full": url_full,
-        "toolAA_mcid_or_teal_vis_id": user_id,
+        "user_id": user_id,
         "tealium_profile": tealium_profile,
         "expireAt": expire_at
     }
