@@ -4,6 +4,8 @@ from logging import Logger
 from typing import Optional
 
 from google.api_core.datetime_helpers import DatetimeWithNanoseconds
+from google.cloud import monitoring_v3
+from config.cfg import GCP_PROJECT
 
 from firestore import FireRef
 from logs import get_logger
@@ -74,6 +76,25 @@ def run_script(payload=None):
     }
     FireRef.collectionDynamic("dataLayerErrorLogs").document(log_id).set(firedoc)
     log().info(f"Stored Data Layer and Error Data to Firestore document ID {log_id}")
+
+    # fire metric for Monitoring Dashboard
+    client = monitoring_v3.MetricServiceClient()
+    project_name = f"projects/{GCP_PROJECT_ID}"
+
+    series = monitoring_v3.TimeSeries()
+    series.metric.type = "custom.googleapis.com/datalayer_error"
+    series.metric.labels["eventName"] = f"{event_name}"
+    series.metric.labels["tealium_profile"] = f"{tealium_profile}"
+    now = time.time()
+    seconds = int(now)
+    nanos = int((now - seconds) * 10 ** 9)
+    interval = monitoring_v3.TimeInterval(
+        {"end_time": {"seconds": seconds, "nanos": nanos}}
+    )
+    point = monitoring_v3.Point({"interval": interval, "value": {"int64_value": 1}})
+    series.points = [point]
+    client.create_time_series(name=project_name, time_series=[series])
+
     return "done"
 
 

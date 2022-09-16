@@ -17,7 +17,7 @@ def log() -> Logger:
     return _LOGGER
 
 
-GCP_PROJECT = environ.get("GCP_PROJECT", "your-project-id")  # todo set your project id for local runs
+GCP_PROJECT = environ.get("GCP_PROJECT", "your-project-id")  # todo set your project id (not your project name!) for local runs
 GCP_PROJECT_NUMBER = environ.get("GCP_PROJECT_NUMBER",
                                  "123456789")  # todo set your project number (for secret manager) for local runs
 
