@@ -1,15 +1,26 @@
+# todo for local runs, configure the following environment variables in PyCharm or similar IDE:
+#  GCP_PROJECT_ID=your_project_id
+#  --
+#  If using the Big Query integration:
+#  BQ_DATALAYER_ERRORS_TABLE_ID=the table ID for the data layer error log table, e.g. `your-project.your_data_set.your_table`.
+#   Default: {project_id}.datalayer_errors.datalayer_error_logs
+#  BQ_DATALAYER_ERRORS_SECRET_ID=the secret ID for the BQ service account key for the data layer error log table.
+#   Default: `python-bqkey`
+#  See more BigQuery steps in the README.md
+big_query_enabled = True # todo set this to True after configuring the BQ integration
+
 import time
 from datetime import timedelta, timezone, date
 from logging import Logger
 from typing import Optional
-
+from json import loads
+from os import environ
 from google.api_core.datetime_helpers import DatetimeWithNanoseconds
-from google.cloud import monitoring_v3
-from config.cfg import GCP_PROJECT
+from google.cloud import bigquery
 
 from firestore import FireRef
+from config.cfg import service_account_secret
 from logs import get_logger
-from util.helpers import safe_get_index
 
 _LOGGER: Optional[Logger] = None
 
@@ -19,6 +30,22 @@ def log() -> Logger:
     if not _LOGGER:
         _LOGGER = get_logger(__name__)
     return _LOGGER
+
+
+def safe_get_index(l, idx, default=None):
+    """Safely gets a list index, e.g. listname[4] and returns the default if not found.
+    :param l: list to check
+    :type l: list
+    :param idx: index to check
+    :param default: Default value to return if index doesn't exist
+    :return: value of index or default
+    """
+    if isinstance(l, list) is False:
+        return default
+    try:
+        return l[idx]
+    except IndexError:
+        return default
 
 
 def run_script(payload=None):
@@ -77,26 +104,31 @@ def run_script(payload=None):
     FireRef.collectionDynamic("dataLayerErrorLogs").document(log_id).set(firedoc)
     log().info(f"Stored Data Layer and Error Data to Firestore document ID {log_id}")
 
-    # fire metric for Monitoring Dashboard
-    client = monitoring_v3.MetricServiceClient()
-    project_name = f"projects/{GCP_PROJECT_ID}"
+    # write some error meta info to BigQuery for Monitoring Dashboard
 
-    series = monitoring_v3.TimeSeries()
-    series.metric.type = "custom.googleapis.com/datalayer_error"
-    series.metric.labels["eventName"] = f"{event_name}"
-    series.metric.labels["tealium_profile"] = f"{tealium_profile}"
-    now = time.time()
-    seconds = int(now)
-    nanos = int((now - seconds) * 10 ** 9)
-    interval = monitoring_v3.TimeInterval(
-        {"end_time": {"seconds": seconds, "nanos": nanos}}
-    )
-    point = monitoring_v3.Point({"interval": interval, "value": {"int64_value": 1}})
-    series.points = [point]
-    client.create_time_series(name=project_name, time_series=[series])
+    project_id = environ.get("GCP_PROJECT_ID", "missing")
+    table_id = environ.get("BQ_DATALAYER_ERRORS_TABLE_ID", f"{project_id}.datalayer_errors.datalayer_error_logs")
+
+    # write to bigquery if enabled
+    if big_query_enabled is False:
+        return "done"
+
+    bq_secret_id = environ.get("BQ_DATALAYER_ERRORS_SECRET_ID", "python-bigquery-pkey")
+    client = bigquery.Client(credentials=service_account_secret(
+        secret_id=bq_secret_id))  # todo this key and service account with rights needs to be created in GCP
+
+    sql_write = f"INSERT INTO `{table_id}` " \
+          f"(event_id, event_name, error_types, error_vars, logged_at, url_full, user_id, tealium_profile) VALUES " \
+          f"('{log_id}', '{event_name}', '{' '.join(error_types)}', '{' '.join(error_types)}', '{logged_at}', '{url_full}', '{user_id}', '{tealium_profile}')"
+    query_job_write = client.query(sql_write)
+    query_job_write.result()
+    log().info(f"Wrote to BigQuery table {table_id}: {sql_write}")
 
     return "done"
 
 
 if __name__ == "__main__":
-    run_script()
+    test_payload = loads(
+        '{"script":"log_datalayer_error","scriptType":"data_layer_tests","errorData":{"data":{"fullOrRegExMatch":[{"var":"url_pathNoLang","event":"view__ecommerce__checkout_cart","message":"url_pathNoLang --> Full or Regex Match failed: Searched for --> /^\\\\/(warenkorb|panier)$/, but found --> \\"/checkout/adresse\\"\\n"}]}},"dataLayer":{"hh":"10","_csubtotal":"","ut.account":"competec","year":"2022","ut.visitor_id":"017d0dad08f8000c38d785f8ac7305072017906a00900","weekday":"7","ut.event":"view","tech_profile":"w:false;p:Win32;h:4;d:8;c:24;s:n","sugg_env":"c","url_full_initial":"https://www.brack.ch/warenkorb","_cpromo":"","_ctotal":"","prod_idUniques":1,"tealium_library_name":"utag.js","_cpdisc":[],"_ccat":[],"tealium_datasource":"5uymm6","prod_action":["checkout_cart"],"prod_cat_l1Uniques":1,"prod_cat_l2Uniques":1,"prod_cat_l3Uniques":1,"rand_pct":0,"url_rootDomain":"brack.ch","url_pathNoLangSearchCleaned":"/checkout/adresse","cart_value":"69.00","tealium_timestamp_local":"2022-09-17T10:34:18.692","url_pathNoLang":"/checkout/adresse","tealium_environment":"prod","prod_quan":["1"],"window_innerWidth":1368,"screen_resolution":"1368x912","teal_geo_region":"BE","prod_posTotal":["1"],"_ctax":"","oss_env":"f","timing_deltaToUtagInit":10351,"tealium_visitor_id":"017d0dad08f8000c38d785f8ac7305072017906a00900","minmin":"34","tealium_event":"view","ut.env":"prod","prod_categoriesUniques":1,"page_type":"Cart","timing.dom_interactive_to_complete":0,"dbg_localStorage":"y","pageViewCounter":"1","component_subcategory":["checkout_cart"],"prod_pos":["1"],"sec":"18","timing.front_end":0,"referrer_path":"/nokia-2620-4g-flip-schwarz-1419624","referrer_pathSearchStripped":"/nokia-2620-4g-flip-schwarz-1419624","debug_info":"ut4.48.202209121632|prod|competecpocudh|y|200|na","ut.domain":"brack.ch","min":"34","page_instanceid":"26b0d51d-3f78-49c7-85a8-94eccac23080_20220917103418706","timing.dom_loading_to_interactive":6056,"_cprice":["69.00"],"_corder":"","AdobeAnalyticsReportSuiteId":"competecbrack","utagQPushTimestamp":"1663403658690","url_host":"www.brack.ch","tealium_timestamp_utc":"2022-09-17T08:34:18.692Z","prod_priceTotal":["69.00"],"order_currency":"CHF","prod_cat_l2":["Telefonie & Kommunikation"],"timing.fetch_to_interactive":9168,"prod_cat_l1":["IT & Multimedia"],"prod_cat_l3":["Mobiltelefone"],"timing.timestamp":1663403640349,"timing.fetch_to_complete":0,"tealium_profile":"main","teal_geo":"CH:BE:BIEL","prod_purchasableHasService":["pu:y_se:_lb:"],"user_loggedin":"y","oss_version_env":"rev3.0::f","teal_geo_country":"CH","hits_on_page":1,"tealium_session_event_number":"21","ut.version":"ut4.48.202209121632","url_full":"https://www.brack.ch/checkout/adresse","tealium_library_version":"4.48.0","dd":"17","bdTeal_human":"y","page_title":"Warenkorb","client_id":"26b0d51d-3f78-49c7-85a8-94eccac23080","prod_id":["1419624"],"prod_cat_hierarchy":["IT & Multimedia/Telefonie & Kommunikation/Mobiltelefone/Mobiltelefon"],"prod_cat_wg":["Mobiltelefon"],"url_pathNoLangSearchStripped":"/checkout/adresse","timing.pathname":"/nokia-2620-4g-flip-schwarz-1419624","screen_height":912,"ut.session_id":"1663403148630","reco_version":"rev2.0","toolAA_rsId":"competecpocudh","_cstore":"web","tealium_random":"0141921913067466","secsec":"18","timing.dns":0,"day":"17","tealium_session_id":"1663403148630","mm":"09","timing.load":0,"user_email":"ef50f020c21ceb2be39b2c70bdad7db2","screen_width":1368,"_ccountry":"","teal_geo_city":"BIEL","user_accid":"df1fff500dd1034774ea9d5bd4bbfaa7","_cprodname":["1419624"],"server_code":"200","url_pathSearchCleaned":"/checkout/adresse","timing.connect":0,"ddhhmin":"171034","component_category":["ecommerce"],"toolAT_atResponseReady":"y","month":"9","bdCust_puppeteer":"n","sugg_version":"rev1.4","reco_version_env":"rev2.0::b","event_name":"view__ecommerce__checkout_cart","tealium_account":"competec","timing.response":2275,"prod_actionStr_prodsOnly":"checkout_cart","_ccustid":"ef50f020c21ceb2be39b2c70bdad7db2","_ccat2":[],"virtualPageView":"y","referrer_full":"https://www.brack.ch/nokia-2620-4g-flip-schwarz-1419624","oss_version":"rev3.0","bdCust_screenAnomaly":"n","_cstate":"","prod_price":["69.00"],"user_email2":"8cfb4fa6a4809e811731c7d392c273192db8163b9191f80bba2046632a82ade2","sugg_version_env":"rev1.4::c","ut.profile":"main","platform":"brack.ch","tool_mochaTestFlag":"1","_csku":["1419624"],"window_innerHeight":769,"url_pathNoLangHash":"/checkout/adresse","hour":"10","_czip":"","referrer_host":"www.brack.ch","_ctype":"","_cbrand":[],"reco_env":"b","timing.query_string":"","toolGA_tid":"UA-88593729-1","prod_purchasable":["y"],"user_agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36","page_language":"de","url_path":"/checkout/adresse","tealium_firstparty_visitor_id":"017d0dad08f8000c38d785f8ac7305072017906a00900","toolAA_UDH_events":["event5","event83","event104","event122","event23","event22","event19","event18","event17","event82","event81","event80","event60","scView","event4","event2"],"url_pathSearchStripped":"/checkout/adresse","url_protocolHostPath":"https://www.brack.ch/checkout/adresse","prod_cat_wgUniques":1,"prod_actionStr":"checkout_cart","bdTeal_humanCrit":"H:not_suspicious","_cship":"","persistPageContext":"n","firstProd_id":"1419624","firstProd_action":"checkout_cart","timing_load":9327,"timing.domain":"www.brack.ch","url_fullStripped":"https://www.brack.ch/checkout/adresse","sumProd_price":69,"tealium_timestamp_epoch":"1663403658","timing.fetch_to_response":2939,"url_pathSearchCleanedHash":"/checkout/adresse","toolAA_mcid_or_teal_vis_id":"16818726493262324901185650879489513159","_ccity":"","_cquan":["1"],"environment_platform":"prod:brack.ch","timing.time_to_first_byte":2939,"yyyymmdd":"20220917","_ccurrency":"CHF","timing_server":8271,"timing_dom":8888,"tealium_session_number":"3","firstProd_cat_hierarchy":"IT & Multimedia/Telefonie & Kommunikation/Mobiltelefone/Mobiltelefon","milsec":"706","request_id":"1398aefc-d664-44e7-9e22-bf27065c73c1","prod_stock":["17"],"_cprod":["1419624"],"cp.ut_aa_mcid":"16818726493262324901185650879489513159","cp._pk_ses.774.a23d":"1","cp.bm_mi":"4556E0E3957DA58EF885FCD7D8BEF8A5~YAAQllJDUOabfTmDAQAAFbaNShHTcx4bmAF0bYkZRV08c51lTi7uh5tAN3cUJOeCWAiUPifFLdMZScBL4nHrADHUf3lCm3Y89n34k5u/qDvUNHLFB/Jqf61adhGDSq2qcoS/gvsHC+sGWz5a4cgkAOGmRdgL+4PEgJpBGzyOJIFFRrnL+MNiGgOk5FrIxK5atjJfE3ak9b7c6wiJtW5K6c31SVJDjJZkmU65vO7UY2ywXyNCtlFHns9wwaI00xT7KkxrK7bYGqrIDXcO2qNQVSv2MTJPZqm2b4SfI83HsVpb0+cuAlgEnWWq+8PYhrayulEdToDkbYcCVUBVym3k9z0Mi1tuulC2Ry+HBiY=~1","cp.utag_main__st":"1663405448365","cp.suggestenv":"rev1.4-C","cp._COMP_HomepagePopup":"1","cp.utag_main__ss":"0","cp.mbox":"PC#6ab7081e8d8a43889b0c766ccaf0a472.37_0#1726648451|session#6765c2999ab747bc9166aa80bc2aea20#1663405511","cp.recommendationsenv":"rev2.0-B","cp.client_id":"j3y1jsqk-tgng-4qey-tpd0-7r2bgvo8bmsj","cp.utag_main__sn":"3","cp._hjSession_2471309":"eyJpZCI6IjhhOGY0M2QzLTkyNDEtNDFjYS04MzBlLWI1NTk0OTc1OGQ1MiIsImNyZWF0ZWQiOjE2NjM0MDMxNTQyOTcsImluU2FtcGxlIjp0cnVlfQ==","cp._uetvid":"4dc48e3042b811ecb60fb3b6d706b916","cp._hjAbsoluteSessionInProgress":"0","cp.AMCVS_4C80243F5C017D750A495CD8%40AdobeOrg":"1","cp._hjCachedUserAttributes":"eyJhdHRyaWJ1dGVzIjp7IlVzZXIgRW1haWwiOiJlZjUwZjAyMGMyMWNlYjJiZTM5YjJjNzBiZGFkN2RiMiJ9LCJ1c2VySWQiOiIxNjgxODcyNjQ5MzI2MjMyNDkwMTE4NTY1MDg3OTQ4OTUxMzE1OSJ9","cp.@competec-ch/b2c-consent":"1","cp.utag_main_vapi_domain":"brack.ch","cp._hjid":"19b0feca-1153-4acd-82f3-a3b7f1fc094f","cp.csrf-token":"027115517c04e36372ed352bfeeee7d47d80ceb069fe539004f0109a665213bf","cp.at_check":"true","cp.cto_bundle":"tbrg719XNXNDOWxuUmNDTXRqSnY1R0I2dnA2WDJIdU5pU2Izanp1ZGNrY1daeUN0czE0UVJYazZsZ1AzMm5KWmZUWEtWRTNXc2hwaGVIelkxMHZJdVh4SldKNnB2UmFmSDMxNlA2ZnFnczQ5ZUs2VXFINmwxVE1xeiUyQlVEVVo4YXV6NmtyZ3FUc2p2N0Y2aTI5ZHVkVERYbCUyQmhnJTNEJTNE","cp.utag_main__se":"21","cp.scarab.visitor":"\\"4582589901AA3727\\"","cp.s_ecid":"MCMID|16818726493262324901185650879489513159","cp._gat_tealium_0":"1","cp._hjSessionUser_2471309":"eyJpZCI6IjI1MmNiNjg4LTRhMzktNWQ2Yy1hNDYwLTY5MWI1MWEwYjc3MCIsImNyZWF0ZWQiOjE2NjMzOTQ1NTYxODQsImV4aXN0aW5nIjp0cnVlfQ==","cp.guuruGa":"GA1.1.2072676331.1663394551","cp._gid":"GA1.2.1388259731.1663394551","cp.utag_main_dc_visit":"3","cp.searchenv":"rev3.0-F","cp._gcl_au":"1.1.316031270.1663394552","cp._hjIncludedInSessionSample":"0","cp._gcl_aw":"GCL.1663394611.CjwKCAjwsfuYBhAZEiwA5a6CDAYArQcWy60HQNCJy8oSyAwNux7dYhFPNUplajKqvwS3ti_I6BSXUxoCpw8QAvD_BwE","cp._abck":"B48382009BAEBB841ACEA1C3DE3ADF2B~0~YAAQllJDUPjhfTmDAQAACxeVSgi/NU8ljj2mmdkQMvZ4Vqo7fW7muc/bLj/TdfZp+FInLwSfKoNNlVnr8YQc/7O4zsW2we9VzjfmL98KBu5z7JqZjMER0Y4qSlLgDp/H3cDqXeJ1hYUGYL5kADAOGruMcAWbMGXzL7deFqyYDkT19vUHU2lbwSCPGaT/RPt6H0rlSF43XiBcTjG90hCd1gA3cxEGRl6GmFSBcNO/6Z97+xYaq80vTIm+CzOjvBW5lWWarzp15lKi1cvOqYaeByDhNcuImZdQEqroUxw+p/gQ1/eVhI1uFy7qOlOa9STtHFVrc3I2APFR0NFLzG1NzxdB75PB/6/taPjE2DjkyZ5tWgjJ0EmC5kk+N5u+W3lSW065Cmj7BSr9NuGbzHFhOnLbIw==~-1~-1~-1","cp.bm_sv":"5EC0308106AEC34F3C0E9BB5B4802A5A~YAAQllJDULTmfTmDAQAAy46VShE6x2x2M4lQP+z/89fAiHGu7JCVc6Bd7dEf6Ogl3kLkAEPHvfRJ+mRyfyMIzIIR6SQ3eNdmMQAUE+0OwgNNsGtGUs2UKvj6PIaqpAeO0wQjj1RPmqH0lvESph1JsnPK2uNz12KYb7mtJj7YU40xBMDJ+5gAUEpJAOPw1wxqLvqybdKyW9IMM9jl2m5+ljWHtKYnCFygkqphaYCkvk7k9PZTDPbMqmBgMpqkFPE=~1","cp.guuruGa_gid":"GA1.1.2121097250.1663394558","cp.utag_main_v_id":"017d0dad08f8000c38d785f8ac7305072017906a00900","cp.bm_sz":"0E949614C084ED6C037DB7696773C529~YAAQllJDUDRteTmDAQAACIYKShH+W7r8+nOtBJOClmJ5itVjsVNmWtXIdMQmlfKU7K0vCOMsLUWbA/LwRObo1q61qSpEBygg1VnkyY2ksKXhGUUgx1bKc5tvjoxqlC4Ha7tue8f0SQ/e4UpkFZgNAmoobfcB5TwEpD56fnRfFFR5r6KewzZBmbDUzsvRBpjcnZDXAo9xykJ3K3GVJFgNAXPlrjDh+0KEoM2naKKq631d2Ez++VpKyGNg7+z0nycDvZCKOzNISj95YlH021kotVwTZdNc6RVOLT+tcHTa0v/R~3551289~3485750","cp._gac_UA-88353487-4":"1.1663394609.CjwKCAjwsfuYBhAZEiwA5a6CDAYArQcWy60HQNCJy8oSyAwNux7dYhFPNUplajKqvwS3ti_I6BSXUxoCpw8QAvD_BwE","cp._uetsid":"5166e110364e11ed94abf1d9691b30d7","cp._gac_UA-88593729-1":"1.1663403150.CjwKCAjwsfuYBhAZEiwA5a6CDAYArQcWy60HQNCJy8oSyAwNux7dYhFPNUplajKqvwS3ti_I6BSXUxoCpw8QAvD_BwE","cp.c-request-id":"983beb8a55fac7319756f84d5452ee28f55acd8ee53de0d64644ce411fe272fd","cp.utag_main_dc_region":"eu-central-1","cp._fbp":"fb.1.1663394551140.1825168391","cp._pk_id.774.a23d":"cf9db4d41b582c62.1663394551.2.1663403637.1663403150.","cp.utag_main_dc_event":"13","cp.utag_main_rpct":"00","cp._hjIncludedInPageviewSample":"1","cp.scandit-device-id":"426848892832a5334af2200e1ecd39522c9ab3cf","cp.demdex":"35189039298808559284121653509085176681","cp.utag_main__pn":"7","cp.AMCV_4C80243F5C017D750A495CD8%40AdobeOrg":"-1513118181|MCMID|16818726493262324901185650879489513159|MCAID|35189039298808559284121653509085176681|MCOPTOUT-1663410349s|NONE|MCAAMLH-1664007949|6|MCAAMB-1664007949|j8Odv6LonN4r3an7LhD3WZrU1bUpAkFkkiY1ncBR96t2PTI|MCCIDH|10969515|vVersion|5.2.0","cp.utag_main_ses_id":"1663403148630","cp._ga":"GA1.2.2072676331.1663394551"},"eventName":"view__ecommerce__checkout_cart"}')
+
+    run_script(payload=test_payload)
