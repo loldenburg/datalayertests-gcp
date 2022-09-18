@@ -1,4 +1,4 @@
-# TODO for local runs, configure the following environment variables in PyCharm or similar IDE:
+# TODO for local runs, configure the following environment variable in PyCharm or similar IDE:
 #  GCP_PROJECT_ID=your_project_id
 #  --
 # TODO if using the Big Query integration:
