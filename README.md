@@ -12,9 +12,9 @@ functions.
 
 ### Recommended (for local runs, code changes etc.)
 
-2. Have Git installed on your machine https://git-scm.com/downloads
-3. For local runs & tests, you nodeJS, Python 3.9 (3.6-3.10 should also work) and an IDE (recommended: PyCharm)
-4. Install the Google CLoud SDK CLI (see: https://cloud.google.com/sdk)
+1. Have Git installed on your machine https://git-scm.com/downloads
+2. For local runs & tests, you nodeJS, Python 3.9 (3.6-3.10 should also work) and an IDE (recommended: PyCharm)
+3. Install the Google CLoud SDK CLI (see: https://cloud.google.com/sdk)
 
 ## 2. Fork the GitHub repo
 
