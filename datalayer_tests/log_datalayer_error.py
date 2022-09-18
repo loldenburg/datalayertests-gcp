@@ -1,13 +1,13 @@
-# todo for local runs, configure the following environment variables in PyCharm or similar IDE:
+# TODO for local runs, configure the following environment variables in PyCharm or similar IDE:
 #  GCP_PROJECT_ID=your_project_id
 #  --
-#  If using the Big Query integration:
-#  BQ_DATALAYER_ERRORS_TABLE_ID=the table ID for the data layer error log table, e.g. `your-project.your_data_set.your_table`.
-#   Default: {project_id}.datalayer_errors.datalayer_error_logs
-#  BQ_DATALAYER_ERRORS_SECRET_ID=the secret ID for the BQ service account key for the data layer error log table.
-#   Default: `python-bqkey`
-#  See more BigQuery steps in the README.md
-big_query_enabled = True # todo set this to True after configuring the BQ integration
+# TODO if using the Big Query integration:
+#   See readme.md for instructions on how to set up the BQ table
+#   Default for the BQ table ID: `{project_id}.datalayer_errors.datalayer_error_logs`
+#   If you want to use another table ID, provide them in the environment variable `BQ_DATALAYER_ERRORS_TABLE_ID`.
+#   Value has to be in format `your-project.your_data_set.your_table`.
+
+big_query_enabled = True  # TODO set this to True after configuring the BQ integration
 
 import time
 from datetime import timedelta, timezone, date
@@ -60,10 +60,10 @@ def run_script(payload=None):
     error_data = payload.get("errorData").get("data")
     event_name = payload.get("eventName", "event_name missing")
     user_id = data_layer.get("tealium_visitor_id",
-                             "missing")  # todo change to your preferred user ID for debugging (by default: Tealium Cookie ID)
+                             "missing")  # TODO change to your preferred user ID for debugging (by default: Tealium Cookie ID)
     url_full = data_layer.get("url_full", "url_full missing")  # todo change to the UDO variable that contains the URL
     prod_id = data_layer.get("prod_id",
-                             [])  # todo change to the UDO variable that contains the product ID (or leave out)
+                             [])  # TODO change to the UDO variable that contains the product ID (or leave out)
     prod_id = safe_get_index(prod_id, 0, None)
     tealium_profile = data_layer.get("tealium_profile", "missing")
     logged_at = DatetimeWithNanoseconds.now(timezone.utc)
@@ -113,13 +113,12 @@ def run_script(payload=None):
     if big_query_enabled is False:
         return "done"
 
-    bq_secret_id = environ.get("BQ_DATALAYER_ERRORS_SECRET_ID", "python-bigquery-pkey")
-    client = bigquery.Client(credentials=service_account_secret(
-        secret_id=bq_secret_id))  # todo this key and service account with rights needs to be created in GCP
+    # bq_secret_id = environ.get("BQ_DATALAYER_ERRORS_SECRET_ID", "python-bigquery-pkey")
+    client = bigquery.Client()
 
     sql_write = f"INSERT INTO `{table_id}` " \
-          f"(event_id, event_name, error_types, error_vars, logged_at, url_full, user_id, tealium_profile) VALUES " \
-          f"('{log_id}', '{event_name}', '{' '.join(error_types)}', '{' '.join(error_types)}', '{logged_at}', '{url_full}', '{user_id}', '{tealium_profile}')"
+                f"(event_id, event_name, error_types, error_vars, logged_at, url_full, user_id, tealium_profile) VALUES " \
+                f"('{log_id}', '{event_name}', '{' '.join(error_types)}', '{' '.join(error_types)}', '{logged_at}', '{url_full}', '{user_id}', '{tealium_profile}')"
     query_job_write = client.query(sql_write)
     query_job_write.result()
     log().info(f"Wrote to BigQuery table {table_id}: {sql_write}")
