@@ -116,7 +116,7 @@ def run_script(payload=None):
 
     sql_write = f"INSERT INTO `{table_id}` " \
                 f"(event_id, event_name, error_types, error_vars, logged_at, url_full, user_id, tealium_profile) VALUES " \
-                f"('{log_id}', '{event_name}', '{' '.join(error_types)}', '{' '.join(error_types)}', '{logged_at}', '{url_full}', '{user_id}', '{tealium_profile}')"
+                f"('{log_id}', '{event_name}', '{';'.join(error_types)}', '{';'.join(error_types)}', '{logged_at}', '{url_full}', '{user_id}', '{tealium_profile}')"
     query_job_write = client.query(sql_write)
     query_job_write.result()
     log().info(f"Wrote to BigQuery table {table_id}: {sql_write}")
