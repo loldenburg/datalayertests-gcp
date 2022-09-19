@@ -44,6 +44,7 @@ The ideas and benefits of it are presented in this article:
 3. Go to **Google Cloud Build** and enable the API if not already enabled.
    Cloud Build Triggers will build (=update) your cloud functions every time you push a change to your GitHub
    repository's "main" branch.
+    0. Enable `Cloud Functions Developer` and `Secret Manager Secret Accessor` roles for Cloud Build Service Account. 
     1. Select "Triggers" and then "Create Trigger".
     2. Fill the fields as provided in the screenshots below (select a different region if your cloud function runs
        elsewhere).
