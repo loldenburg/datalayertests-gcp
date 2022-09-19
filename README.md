@@ -28,6 +28,8 @@ The ideas and benefits of it are presented in this article:
 
 ## 3. Set up Google Cloud Project components
 
+0. Enable Resource Manager API: `https://console.cloud.google.com/apis/library/cloudresourcemanager.googleapis.com`
+
 1. Go to the **Google Cloud Functions**
     1. Click "create function".
     2. Enable the APIs shown.
