@@ -5,22 +5,25 @@ steps:
     waitFor:
       - '-'
     args: [
-        'functions', 'deploy', 'data-layer-tests',
-        '--source', 'https://source.developers.google.com/projects/${PROJECT_ID}/repos/${REPO_NAME}/moveable-aliases/${BRANCH_NAME}/paths/data_layer_collector',
+        'functions', 'deploy', '${_SERVICE_NAME}',
         '--runtime', 'python39',
         '--trigger-http',
         '--allow-unauthenticated',
         '--set-env-vars', 'GCP_REGION=${_REGION},GCP_PROJECT=${PROJECT_ID}',
-        '--entry-point', 'data_layer_collector',
-        '--project', '${PROJECT_ID}',
+        '--set-secrets', 'ERROR_LOG_TOKEN=${_ERROR_LOG_TOKEN_SECRET_NAME}:${_ERROR_LOG_TOKEN_SECRET_VERSION}',
+        '--entry-point', '${_ENTRY_POINT}',
         '--timeout', '540s',
-        '--memory', '256MB',
+        '--memory', '512MB',
         '--region', '${_REGION}',
-        '--service-account', '${_SERVICE_ACCOUNT}'
+        '--project', '${PROJECT_ID}'
     ]
 timeout: 1200s
 substitutions:
   _SERVICE_NAME: "datalayer-tests-push"
+  _REGION: "us-central1"
+  _ENTRY_POINT: "main_handler"
+  _ERROR_LOG_TOKEN_SECRET_NAME: "data-layer-error-log-token"
+  _ERROR_LOG_TOKEN_SECRET_VERSION: "latest"
 
 options:
   logging: 'CLOUD_LOGGING_ONLY'
