@@ -42,6 +42,7 @@ The ideas and benefits of it are presented in this article:
    Tealium Functions.
    This will be used to authenticate the data layer error log cloud function. It has to be part of your Tealium Function
    request to the Cloud Function.
+   2.2 Ensure default service account for GCF has `Secret Manager Accessor` role
 
 3. Go to **Google Cloud Build** and enable the API if not already enabled.
    Cloud Build Triggers will build (=update) your cloud functions every time you push a change to your GitHub
