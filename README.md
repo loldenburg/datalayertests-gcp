@@ -17,7 +17,8 @@ The ideas and benefits of it are presented in this article:
 
 1. Have Git installed on your machine https://git-scm.com/downloads
 2. For local runs & tests, you nodeJS, Python 3.9 (3.6-3.10 should also work) and an IDE (recommended: PyCharm)
-3. Install the Google CLoud SDK CLI (see: https://cloud.google.com/sdk)
+3. Install the Google Cloud SDK CLI (see: https://cloud.google.com/sdk)
+4. Authenticate Google Cloud SDK CLI: `gcloud auth login --update-adc`
 
 ## 2. Fork the GitHub repo
 
@@ -33,7 +34,14 @@ The ideas and benefits of it are presented in this article:
     3. When you get to the screen to set up the cloud function, click the "back" button to return to the Cloud Functions
        overview page.
 
-2. Go to **Google Cloud Build** and enable the API if not already enabled.
+2. Go to **Secret Manager** and enable the Secret Manager API:
+   2.1. In Secret Manager, create a secret called "data-layer-error-log-token" with the value of the GCF token set
+   earlier in
+   Tealium Functions.
+   This will be used to authenticate the data layer error log cloud function. It has to be part of your Tealium Function
+   request to the Cloud Function.
+
+3. Go to **Google Cloud Build** and enable the API if not already enabled.
    Cloud Build Triggers will build (=update) your cloud functions every time you push a change to your GitHub
    repository's "main" branch.
     1. Select "Triggers" and then "Create Trigger".
@@ -47,13 +55,6 @@ The ideas and benefits of it are presented in this article:
     4. Under "Build Configuration", select "Cloud Build configuration file (yaml or json)" and confirm "
        /cloudbuild.yaml" as the file name.
     5. Now run the trigger once manually. This will create the cloud functions in your project.
-
-3. Go to **Secret Manager** and enable the Secret Manager API:
-   3.1. In Secret Manager, create a secret called "data-layer-error-log-token" with the value of the GCF token set
-   earlier in
-   Tealium Functions.
-   This will be used to authenticate the data layer error log cloud function. It has to be part of your Tealium Function
-   request to the Cloud Function.
 
 4. Go to **Firestore**
     1. Select Native Mode
