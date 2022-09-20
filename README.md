@@ -60,6 +60,15 @@ The ideas and benefits of it are presented in this article:
        /cloudbuild.yaml" as the file name.
     5. Now run the trigger once manually. This will create the cloud functions in your project.
 
+
+    In order to trigger a build from the local folder run the following command:
+
+    ```bash
+    gcloud builds submit . \
+      --substitutions="_SERVICE_NAME=datalayer-tests-push,_REGION=us-central1,_ENTRY_POINT=main_handler,_ERROR_LOG_TOKEN_SECRET_NAME=error-log-token,_ERROR_LOG_TOKEN_SECRET_VERSION=1" \
+      --project="<your-project-id>"
+    ```
+
 4. Go to **Firestore**
     1. Select Native Mode
     2. Region: nam5 (United States) “multi-region” (or the same region where your cloud function runs)

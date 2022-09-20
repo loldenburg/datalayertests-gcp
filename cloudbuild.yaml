@@ -24,7 +24,7 @@ substitutions:
   _REGION: "us-central1"
   _ENTRY_POINT: "main_handler"
   _ERROR_LOG_TOKEN_SECRET_NAME: "data-layer-error-log-gcf-token"
-  _ERROR_LOG_TOKEN_SECRET_VERSION: "latest"
+  _ERROR_LOG_TOKEN_SECRET_VERSION: "1"
 
 options:
   logging: 'CLOUD_LOGGING_ONLY'
