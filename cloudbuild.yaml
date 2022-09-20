@@ -9,20 +9,21 @@ steps:
         '--runtime', 'python39',
         '--trigger-http',
         '--allow-unauthenticated',
-        '--set-env-vars', 'GCP_REGION=${_REGION},GCP_PROJECT=${PROJECT_ID}',
+        '--set-env-vars', 'GCP_REGION=${_REGION},GCP_PROJECT_ID=${PROJECT_ID}',
         '--set-secrets', 'ERROR_LOG_TOKEN=${_ERROR_LOG_TOKEN_SECRET_NAME}:${_ERROR_LOG_TOKEN_SECRET_VERSION}',
         '--entry-point', '${_ENTRY_POINT}',
-        '--timeout', '540s',
-        '--memory', '512MB',
+        '--timeout', '20s',
+        '--memory', '256MB',
         '--region', '${_REGION}',
-        '--project', '${PROJECT_ID}'
+        '--project', '${PROJECT_ID}',
+        '--max-instances', '25'
     ]
 timeout: 1200s
 substitutions:
   _SERVICE_NAME: "datalayer-tests-push"
   _REGION: "us-central1"
   _ENTRY_POINT: "main_handler"
-  _ERROR_LOG_TOKEN_SECRET_NAME: "data-layer-error-log-token"
+  _ERROR_LOG_TOKEN_SECRET_NAME: "data-layer-error-log-gcf-token"
   _ERROR_LOG_TOKEN_SECRET_VERSION: "latest"
 
 options:
