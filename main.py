@@ -3,7 +3,7 @@ from datetime import datetime
 from http import HTTPStatus
 from logging import Logger
 from typing import Optional
-
+from os import environ
 from flask import Request, jsonify
 
 from config import cfg
@@ -45,7 +45,7 @@ def main_handler(request: Request):
     log().info(f"Request body: {request_json}")
 
     if request_json and "token" in request_json:
-        token = cfg.secret_mgr_get_secret("error-log-token") #todo instead, do os.getenv("ERROR_LOG_TOKEN")
+        token = environ.get("ERROR_LOG_TOKEN")
         if request_json.get("token") == token:
             if script == "log_datalayer_error":
                 log_datalayer_error(payload=event_payload)

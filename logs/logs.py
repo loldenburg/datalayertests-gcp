@@ -30,11 +30,6 @@ logging.getLogger("google.cloud.logging_v2.handlers.transports.background_thread
 logging.getLogger("google.auth._default").setLevel(logging.WARN)
 logging.getLogger("google.auth.transport._http_client").setLevel(logging.WARN)
 logging.getLogger("google.auth.transport.requests").setLevel(logging.WARN)
-logging.getLogger("urllib3.connectionpool").setLevel(
-    logging.WARN)  # uncomment this row to keep getting logs from urllib
-logging.getLogger("matplotlib").setLevel(logging.WARN)
-logging.getLogger("matplotlib.font_manager").setLevel(logging.WARN)
-logging.getLogger("aanalytics2").setLevel(logging.INFO)
 
 logging.basicConfig(level=logging.DEBUG, format=__LOG_FORMAT)
 delegate_log_record_factory = logging.getLogRecordFactory()
@@ -68,6 +63,7 @@ __SETUP_GCF_LOGGING = os.environ.get('GCF_LOCAL') is None and os.environ.get("K_
 
 """Indicates whether the Cloud Logging must be explicitly configured for GCE env.
 """
+
 
 def __setup_gcf_logging(logger: Logger):
     client = CloudLoggingClient()
