@@ -37,35 +37,45 @@ The ideas and benefits of it are presented in this article:
        overview page.
 
 2. Go to **Secret Manager** and enable the Secret Manager API:
-   2.1. In Secret Manager, create a secret called "data-layer-error-log-token" with the value of the GCF token set
-   earlier in
-   Tealium Functions.
+   1. In Secret Manager, create a secret called `data-layer-tests-gcf-token` with the value of the GCF token set
+   earlier in Tealium Functions.
    This will be used to authenticate the data layer error log cloud function. It has to be part of your Tealium Function
    request to the Cloud Function.
-   2.2 Ensure default service account for GCF has `Secret Manager Accessor` role
+   2. Ensure default service account for GCF has `Secret Manager Accessor` role
 
 3. Go to **Google Cloud Build** and enable the API if not already enabled.
    Cloud Build Triggers will build (=update) your cloud functions every time you push a change to your GitHub
    repository's "main" branch.
-    0. Enable `Cloud Functions Developer` and `Secret Manager Secret Accessor` roles for Cloud Build Service Account. 
+    0. Enable `Cloud Functions Developer` and `Secret Manager Secret Accessor` roles for Cloud Build Service Account under "Settings". 
     1. Select "Triggers" and then "Create Trigger".
-    2. Fill the fields as provided in the screenshots below (select a different region if your cloud function runs
-       elsewhere).
-    3. Under "Source", select "Connect New Repository", then "External Repository", then "GitHub". Then select your
+    2. Fill the fields as provided in the screenshots below.
+       - Name: push-to-build-gcf-data-layer-tests (or whatever you like)
+       - Region: global
+       - Description: Triggers on commit to main branch and deploys Cloud Function
+       - Event: Push to a branch
+       - Source: Select "Connect New Repository", then "External Repository", then "GitHub". Then select your
        forked GitHub repository.
-       ![img.png](create trigger-1.png)
-       ![img.png](create-trigger-2.png)
-       ![img.png](select-github-repo.png)
-    4. Under "Build Configuration", select "Cloud Build configuration file (yaml or json)" and confirm "
-       /cloudbuild.yaml" as the file name.
-    5. Now run the trigger once manually. This will create the cloud functions in your project.
+       - Branch: ^main$
+       - Location: Repository
+       - Cloud Build Configuration file location: -> `/cloudbuild.yaml`
+       - Advanced: -> Substition variables
+         - _ENTRY_POINT: `main_handler`
+         - _ERROR_LOG_TOKEN_SECRET_NAME: `data-layer-tests-gcf-token`
+         - _ERROR_LOG_TOKEN_SECRET_VERSION: `1` (recommended not to use "latest" because secret is picked up only during build -> this way it is explicit, that if you change the secret, you need to rebuild the function (with a change in the trigger)
+         - _REGION: `us-central1` or a different region if your cloud function should run
+       elsewhere. Make sure Cloud Function region = Firestore and BigQuery (if used) region.
+         - _SERVICE_NAME: `data-layer-tests-handler`
+       - Check "send builds to GitHub" (you can follow the build live in GitHub and see errors there)
+  
+           ![img.png](create-trigger-1.png)
+           ![img.png](create-trigger-2.png)
 
-
-    In order to trigger a build from the local folder run the following command:
+   3. Now run the trigger once manually. This will create the cloud functions in your project. 
+      - You can also trigger a build (bypassing the trigger in the GCF interface) from your local folder with the following command:
 
     ```bash
     gcloud builds submit . \
-      --substitutions="_SERVICE_NAME=datalayer-tests-push,_REGION=us-central1,_ENTRY_POINT=main_handler,_ERROR_LOG_TOKEN_SECRET_NAME=error-log-token,_ERROR_LOG_TOKEN_SECRET_VERSION=1" \
+      --substitutions="_SERVICE_NAME=data-layer-tests-handler,_REGION=us-central1,_ENTRY_POINT=main_handler,_ERROR_LOG_TOKEN_SECRET_NAME=data-layer-tests-gcf-token,_ERROR_LOG_TOKEN_SECRET_VERSION=1" \
       --project="<your-project-id>"
     ```
 
