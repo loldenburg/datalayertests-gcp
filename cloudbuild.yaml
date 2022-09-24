@@ -20,7 +20,7 @@ steps:
     ]
 timeout: 1200s
 substitutions:
-  _SERVICE_NAME: "data-layer-tests-handler-2"
+  _SERVICE_NAME: "data-layer-tests-handler"
   _REGION: "us-central1"
   _ENTRY_POINT: "main_handler"
   _ERROR_LOG_TOKEN_SECRET_NAME: "data-layer-tests-gcf-token"
