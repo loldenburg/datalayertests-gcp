@@ -74,10 +74,14 @@ The ideas and benefits of it are presented in this article:
       - You can also trigger a build (bypassing the trigger in the GCF interface) from your local folder with the following command:
 
     ```bash
-    gcloud builds submit . \
-      --substitutions="_SERVICE_NAME=data-layer-tests-handler,_REGION=us-central1,_ENTRY_POINT=main_handler,_ERROR_LOG_TOKEN_SECRET_NAME=data-layer-tests-gcf-token,_ERROR_LOG_TOKEN_SECRET_VERSION=1" \
-      --project="<your-project-id>"
+    gcloud builds submit --substitutions="_SERVICE_NAME=data-layer-tests-handler,_REGION=us-central1,_ENTRY_POINT=main_handler,_ERROR_LOG_TOKEN_SECRET_NAME=data-layer-tests-gcf-token,_ERROR_LOG_TOKEN_SECRET_VERSION=1" --project="<your-project-id>"
     ```
+   4. **Make your Function public**:
+      1. Go to [Cloud Functions](https://console.cloud.google.com/functions). 
+      2. Check the "Authenticated" column for your newly created function. If it does not have `"Allow unauthenticated"` written in it, click on the checkbox to the left of the function and then on "Permissions".
+      3. In the "Permissions" tab, click on "Add member", then "Add Principal". 
+      4. Add the `allUsers` principal with the `Cloud Functions Invoker` role. ![img.png](make-cloud-function-public.png)
+      
 
 4. Go to **Firestore**
     1. Select Native Mode
