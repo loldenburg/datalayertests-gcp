@@ -11,12 +11,14 @@ big_query_enabled = True  # TODO set this to True after configuring the BQ integ
 
 import time
 from datetime import timedelta, timezone, date
-from logging import Logger
-from typing import Optional
 from json import loads
+from logging import Logger
 from os import environ
+from typing import Optional
+
 from google.api_core.datetime_helpers import DatetimeWithNanoseconds
 from google.cloud import bigquery
+
 from firestore import FireRef
 from logs import get_logger
 
@@ -72,12 +74,16 @@ def run_script(payload=None):
     msg = f"Error Log ID: {log_id},\nEvent: {event_name},\nURL: {url_full},\nUser ID: {user_id},\n"
     error_types = []
     error_vars = []
+    error_messages = []
     for error_type in error_data:
         msg += f"Errors of type: {error_type}\n"  # eg "populatedAndOfType"
         error_types.append(error_type)
         for error in error_data[error_type]:
-            msg += f"{error.get('var', 'var missing')}: {error.get('message', 'message missing')}\n"
-            error_vars.append(error.get('var', 'var missing'))
+            error_var = error.get("var", "var missing")
+            error_msg = error.get("message", "msg missing")
+            msg += f"{error_var}: {error_msg}\n"
+            error_vars.append(error_var)
+            error_messages.append(error_msg)
 
     log().info(msg)
     # log().info(f"Full Data Layer: \n{data_layer}")
