@@ -7,7 +7,7 @@
 #   If you want to use another table ID, provide them in the environment variable `BQ_DATALAYER_ERRORS_TABLE_ID`.
 #   Value has to be in format `your-project.your_data_set.your_table`.
 
-big_query_enabled = False  # TODO set this to True after configuring the BQ integration
+big_query_enabled = True  # TODO set this to True after configuring the BQ integration
 
 import time
 from datetime import timedelta, timezone, date
@@ -62,7 +62,7 @@ def run_script(payload=None):
                              "missing")  # TODO change to your preferred user ID for debugging (by default: Tealium Cookie ID)
     url_full = data_layer.get("url_full", "url_full missing")  # todo change to the UDO variable that contains the URL
     prod_id = data_layer.get("prod_id",
-                             [])  # TODO change to the UDO variable that contains the product ID (or leave out)
+                             [])  # TODO change to the UDO variable that contains the product ID (or leave as is if you don't have one)
     prod_id = safe_get_index(prod_id, 0, None)
     tealium_profile = data_layer.get("tealium_profile", "missing")
     logged_at = DatetimeWithNanoseconds.now(timezone.utc)
@@ -107,14 +107,12 @@ def run_script(payload=None):
     FireRef.collectionDynamic("dataLayerErrorLogs").document(log_id).set(firedoc)
     log().info(f"Stored Data Layer and Error Data to Firestore document ID {log_id}")
 
-    # write some error meta info to BigQuery for Monitoring Dashboard
+    # ---- write some error meta info to BigQuery for Monitoring Dashboard
+    if big_query_enabled is False:
+        return "done"
 
     project_id = environ.get("GCP_PROJECT_ID", "missing")
     table_id = environ.get("BQ_DATALAYER_ERRORS_TABLE_ID", f"{project_id}.datalayer_errors.datalayer_error_logs")
-
-    # write to bigquery if enabled
-    if big_query_enabled is False:
-        return "done"
 
     client = bigquery.Client()
 

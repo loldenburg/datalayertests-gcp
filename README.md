@@ -21,11 +21,12 @@ The ideas and benefits of it are presented in this article:
 3. Install the Google Cloud SDK CLI (see: https://cloud.google.com/sdk)
 4. Authenticate Google Cloud SDK CLI: `gcloud auth login --update-adc`
 
-## 2. Fork the GitHub repo
+## 2. Fork the GitHub repo and do configurations
 
 1. Go to https://github.com/loldenburg/datalayertests-gcp
 2. Click on "Fork" and fork the project. You now have your own GitHub repository with a copy of the code.
    ![Fork Project](fork-project.png)
+3. Open the `datalayer_tests/log_datalayer_error.py` file and follow the "TODO" comments in there
 
 ## 3. Set up Google Cloud Project components
 
@@ -149,8 +150,8 @@ CREATE TABLE IF NOT EXISTS
 -- ...to here
 #@formatter: on
 ```
-7. Go to IAM. Select the "App Engine default service account" and confirm that this account has "BigQuery Editor" permissions. #todo check if that is correct!
-8. Finally, go into your code editor and open the file `data-layer-tests-gcp/datalayer_error_log.py`.
+7. Go to IAM. Select the "App Engine default service account" and confirm that this account has "BigQuery Data Editor" and "BigQuery Job User" permissions. #todo check if that is correct!
+8. Finally, go into your code editor and open the file `data-layer-tests-gcp/datalayer_error_log.py`. (Make sure you have HTTP Proxies like **Fiddler off** now!)
 9. Set env variables to run your code locally (guide for PyCharm). 
    1. Set a breakpoint at the start of the code and then click on Debug above the code editor.
    2. When the code pauses at the breakpoint, click on the dropdown next to the green "play" button and select "Edit Configurations".
