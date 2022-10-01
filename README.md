@@ -4,6 +4,7 @@ This repo complements the server-side data layer testing framework from https://
 code for Google Cloud Functions, Firestore and BigQuery as well as a step-by-step setup guide.
 
 The ideas and benefits of it are presented in this article:
+
 * https://thebounce.io/use-your-server-side-tms-to-qa-your-data-collection-in-the-real-world-7137376ca9a9
 
 # Step-by-step Guide
@@ -37,57 +38,64 @@ The ideas and benefits of it are presented in this article:
        overview page.
 
 2. Go to **Secret Manager** and enable the Secret Manager API:
-   1. In Secret Manager, create a secret called `data-layer-tests-gcf-token` with the value of the GCF token set
-   earlier in Tealium Functions.
-   This will be used to authenticate the data layer error log cloud function. It has to be part of your Tealium Function
-   request to the Cloud Function.
-   2. Ensure default service account for GCF has `Secret Manager Accessor` role
+    1. In Secret Manager, create a secret called `data-layer-tests-gcf-token` with the value of the GCF token set
+       earlier in Tealium Functions.
+       This will be used to authenticate the data layer error log cloud function. It has to be part of your Tealium
+       Function
+       request to the Cloud Function.
 
 3. Go to **Google Cloud Build** and enable the API if not already enabled.
    Cloud Build Triggers will build (=update) your cloud functions every time you push a change to your GitHub
    repository's "main" branch.
-    0. Enable `Cloud Functions Developer` and `Secret Manager Secret Accessor` roles for Cloud Build Service Account under "Settings". 
+    0. Enable `Cloud Functions Developer` and `Secret Manager Secret Accessor` roles for Cloud Build Service Account
+       under "Settings".
     1. Select "Triggers" and then "Create Trigger".
     2. Fill the fields as provided in the screenshots below.
-       - Name: push-to-build-gcf-data-layer-tests (or whatever you like)
-       - Region: global
-       - Description: Triggers on commit to main branch and deploys Cloud Function
-       - Event: Push to a branch
-       - Source: Select "Connect New Repository", then "External Repository", then "GitHub". Then select your
-       forked GitHub repository.
-       - Branch: ^main$
-       - Location: Repository
-       - Cloud Build Configuration file location: -> `/cloudbuild.yaml`
-       - Advanced: -> Substition variables
-         - _ENTRY_POINT: `main_handler`
-         - _ERROR_LOG_TOKEN_SECRET_NAME: `data-layer-tests-gcf-token`
-         - _ERROR_LOG_TOKEN_SECRET_VERSION: `1` (recommended not to use "latest" because secret is picked up only during build -> this way it is explicit, that if you change the secret, you need to rebuild the function (with a change in the trigger)
-         - _REGION: `us-central1` or a different region if your cloud function should run
-       elsewhere. Make sure Cloud Function region = Firestore and BigQuery (if used) region.
-         - _SERVICE_NAME: `data-layer-tests-handler`
-       - Check "send builds to GitHub" (you can follow the build live in GitHub and see errors there)
-  
-           ![img.png](create-trigger-1.png)
-           ![img.png](create-trigger-2.png)
+        - Name: push-to-build-gcf-data-layer-tests (or whatever you like)
+        - Region: global
+        - Description: Triggers on commit to main branch and deploys Cloud Function
+        - Event: Push to a branch
+        - Source: Select "Connect New Repository", then "External Repository", then "GitHub". Then select your
+          forked GitHub repository.
+        - Branch: ^main$
+        - Location: Repository
+        - Cloud Build Configuration file location: -> `/cloudbuild.yaml`
+        - Advanced: -> Substition variables
+            - _ENTRY_POINT: `main_handler`
+            - _ERROR_LOG_TOKEN_SECRET_NAME: `data-layer-tests-gcf-token`
+            - _ERROR_LOG_TOKEN_SECRET_VERSION: `1` (recommended not to use "latest" because secret is picked up only
+              during build -> this way it is explicit, that if you change the secret, you need to rebuild the function (
+              with a change in the trigger))
+            - _REGION: `us-central1` or a different region if your cloud function should run
+              elsewhere. Make sure Cloud Function region = Firestore and BigQuery (if used) region.
+            - _SERVICE_NAME: `data-layer-tests-handler`
+        - Check "send builds to GitHub" (you can follow the build live in GitHub and see errors there)
 
-   3. Now run the trigger once manually. This will create the cloud functions in your project. 
-      - You can also trigger a build (bypassing the trigger in the GCF interface) from your local folder with the following command:
+          ![img.png](create-trigger-1.png)
+          ![img.png](create-trigger-2.png)
+
+    3. Now run the trigger once manually. This will create the cloud functions in your project (while waiting for the build, you can continue with Firestore setup).
+        - You can also trigger a build (bypassing the trigger in the GCF interface) from your local folder with the
+          following command:
 
     ```bash
     gcloud builds submit --substitutions="_SERVICE_NAME=data-layer-tests-handler,_REGION=us-central1,_ENTRY_POINT=main_handler,_ERROR_LOG_TOKEN_SECRET_NAME=data-layer-tests-gcf-token,_ERROR_LOG_TOKEN_SECRET_VERSION=1" --project="<your-project-id>"
     ```
-   4. **Make your Function public**:
-      1. Go to [Cloud Functions](https://console.cloud.google.com/functions). 
-      2. Check the "Authenticated" column for your newly created function. If it does not have `"Allow unauthenticated"` written in it, click on the checkbox to the left of the function and then on "Permissions".
-      3. In the "Permissions" tab, click on "Add member", then "Add Principal". 
-      4. Add the `allUsers` principal with the `Cloud Functions Invoker` role. ![img.png](make-cloud-function-public.png)
-      
+    4. **Make your Function public**:
+        1. Go to [Cloud Functions](https://console.cloud.google.com/functions).
+        2. Check the "Authenticated" column for your newly created function. If it does not
+           have `"Allow unauthenticated"` written in it, click on the checkbox to the left of the function and then on "
+           Permissions".
+        3. In the "Permissions" tab, click on "Add member", then "Add Principal".
+        4. Add the `allUsers` principal with the `Cloud Functions Invoker`
+           role. ![img.png](make-cloud-function-public.png)
+
 
 4. Go to **Firestore**
     1. Select Native Mode
-    2. Region: nam5 (United States) “multi-region” (or the same region where your cloud function runs)
-    3. Click “start collection”
-    4. Name the collection “dataLayerErrorLogs”
+    2. Region: nam5 (United States) "multi-region" (or the same region where your cloud function runs)
+    3. Click "start collection"
+    4. Name the collection "dataLayerErrorLogs"
     5. Delete the document again that Google creates automatically (click the three dots next to it and then "delete")
 
 5. Go to **Cloud Functions** to get **Trigger URL**
@@ -100,7 +108,7 @@ The ideas and benefits of it are presented in this article:
     2. Create a new variable called "urlGCF" and set the value to the Cloud Function Trigger URL from step 5.3
     3. Uncomment the rows below `// UNCOMMENT THIS IF YOU HAVE YOUR OWN GCLOUD CONNECTION`
     4. Save the function
-    5. Publish your Tealium CDH profile. You are done!
+    5. Publish your Tealium CDH profile!
 
 If you want to monitor your data with BigQuery and Data Studio, you can additionally follow the steps below.
 
@@ -135,8 +143,12 @@ CREATE TABLE IF NOT EXISTS
 ```
 7. Go to IAM. Select the "App Engine default service account" and confirm that this account has "Editor" permissions. #todo check if that is correct!
 8. Finally, go into your code editor and open the file `data-layer-tests-gcp/datalayer_error_log.py`.
-9. Change the row `big_query_enabled = False` to `big_query_enabled = True` and push to the main branch of your GitHub repository. 
-10. After the build, your cloud function will now write all your data layer errors to BigQuery.
+9. Set env variables to run your code locally (guide for PyCharm). 
+   1. Set a breakpoint at the start of the code and then click on Debug above the code editor.
+   2. When the code pauses at the breakpoint, click on the dropdown next to the green "play" button and select "Edit Configurations".
+   3. Add "GCP_PROJECT_ID" with the value of your GCP project id ![img.png](edit-env-vars-pycharm.png)
+10. Change the row `big_query_enabled = False` to `big_query_enabled = True` and push to the main branch of your GitHub repository. 
+1After the build, your cloud function will now write all your data layer errors to BigQuery.
 
 ### Data Studio
 
