@@ -43,6 +43,13 @@ The ideas and benefits of it are presented in this article:
        This will be used to authenticate the data layer error log cloud function. It has to be part of your Tealium
        Function
        request to the Cloud Function.
+    2. Enable Secret Manager Access for the Service Account that will run our Cloud Function.
+        1. Go to IAM
+        2. Click on Edit next to the "App Engine default service account" (we will run the Cloud Function with this
+           Service Account to keep things simple)
+        3. Add the role "Secret Manager Secret Accessor".
+        4. If you want to use the __BigQuery__ integration, also give the roles "BigQuery Data Editor" and "BigQuery Job
+           User"
 
 3. Go to **Google Cloud Build** and enable the API if not already enabled.
    Cloud Build Triggers will build (=update) your cloud functions every time you push a change to your GitHub
@@ -74,21 +81,13 @@ The ideas and benefits of it are presented in this article:
           ![img.png](create-trigger-1.png)
           ![img.png](create-trigger-2.png)
 
-    3. Now run the trigger once manually. This will create the cloud functions in your project (while waiting for the build, you can continue with Firestore setup).
+    3. Now run the trigger once manually. This will create the cloud functions in your project.
         - You can also trigger a build (bypassing the trigger in the GCF interface) from your local folder with the
           following command:
 
     ```bash
     gcloud builds submit --substitutions="_SERVICE_NAME=data-layer-tests-handler,_REGION=us-central1,_ENTRY_POINT=main_handler,_ERROR_LOG_TOKEN_SECRET_NAME=data-layer-tests-gcf-token,_ERROR_LOG_TOKEN_SECRET_VERSION=1" --project="<your-project-id>"
     ```
-    4. **Make your Function public**:
-        1. Go to [Cloud Functions](https://console.cloud.google.com/functions).
-        2. Check the "Authenticated" column for your newly created function. If it does not
-           have `"Allow unauthenticated"` written in it, click on the checkbox to the left of the function and then on "
-           Permissions".
-        3. In the "Permissions" tab, click on "Add member", then "Add Principal".
-        4. Add the `allUsers` principal with the `Cloud Functions Invoker`
-           role. ![img.png](make-cloud-function-public.png)
 
 
 4. Go to **Firestore**
@@ -98,12 +97,21 @@ The ideas and benefits of it are presented in this article:
     4. Name the collection "dataLayerErrorLogs"
     5. Delete the document again that Google creates automatically (click the three dots next to it and then "delete")
 
-5. Go to **Cloud Functions** to get **Trigger URL**
+5. **Make your Function public**:
+   1. Go to [Cloud Functions](https://console.cloud.google.com/functions).
+   2. Check the "Authenticated" column for your newly created function. If it does not
+      have `"Allow unauthenticated"` written in it, click on the checkbox to the left of the function and then on "
+      Permissions".
+   3. In the "Permissions" tab, click on "Add member", then "Add Principal".
+   4. Add the `allUsers` principal with the `Cloud Functions Invoker`
+      role. ![img.png](make-cloud-function-public.png)
+
+6. Go to **Cloud Functions** to get **Trigger URL**
     1. Click on the newly created cloud function "data-layer-tests"
     2. Click on "Trigger"
     3. Copy the Trigger URL
 
-6. Go to **Tealium Functions**
+7. Update URL & Code in **Tealium Functions**
     1. Edit Function -> Global Variables
     2. Create a new variable called "urlGCF" and set the value to the Cloud Function Trigger URL from step 5.3
     3. Uncomment the rows below `// UNCOMMENT THIS IF YOU HAVE YOUR OWN GCLOUD CONNECTION`
@@ -141,14 +149,14 @@ CREATE TABLE IF NOT EXISTS
 -- ...to here
 #@formatter: on
 ```
-7. Go to IAM. Select the "App Engine default service account" and confirm that this account has "Editor" permissions. #todo check if that is correct!
+7. Go to IAM. Select the "App Engine default service account" and confirm that this account has "BigQuery Editor" permissions. #todo check if that is correct!
 8. Finally, go into your code editor and open the file `data-layer-tests-gcp/datalayer_error_log.py`.
 9. Set env variables to run your code locally (guide for PyCharm). 
    1. Set a breakpoint at the start of the code and then click on Debug above the code editor.
    2. When the code pauses at the breakpoint, click on the dropdown next to the green "play" button and select "Edit Configurations".
    3. Add "GCP_PROJECT_ID" with the value of your GCP project id ![img.png](edit-env-vars-pycharm.png)
 10. Change the row `big_query_enabled = False` to `big_query_enabled = True` and push to the main branch of your GitHub repository. 
-1After the build, your cloud function will now write all your data layer errors to BigQuery.
+11. After the build, your cloud function will now write all your data layer errors to BigQuery.
 
 ### Data Studio
 
