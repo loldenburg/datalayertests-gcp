@@ -99,13 +99,13 @@ The ideas and benefits of it are presented in this article:
     5. Delete the document again that Google creates automatically (click the three dots next to it and then "delete")
 
 5. **Make your Function public**:
-   1. Go to [Cloud Functions](https://console.cloud.google.com/functions).
-   2. Check the "Authenticated" column for your newly created function. If it does not
-      have `"Allow unauthenticated"` written in it, click on the checkbox to the left of the function and then on "
-      Permissions".
-   3. In the "Permissions" tab, click on "Add member", then "Add Principal".
-   4. Add the `allUsers` principal with the `Cloud Functions Invoker`
-      role. ![img.png](make-cloud-function-public.png)
+    1. Go to [Cloud Functions](https://console.cloud.google.com/functions).
+    2. Check the "Authenticated" column for your newly created function. If it does not
+       have `"Allow unauthenticated"` written in it, click on the checkbox to the left of the function and then on "
+       Permissions".
+    3. In the "Permissions" tab, click on "Add member", then "Add Principal".
+    4. Add the `allUsers` principal with the `Cloud Functions Invoker`
+       role. ![img.png](make-cloud-function-public.png)
 
 6. Go to **Cloud Functions** to get **Trigger URL**
     1. Click on the newly created cloud function "data-layer-tests"
@@ -161,4 +161,5 @@ CREATE TABLE IF NOT EXISTS
 
 ### Data Studio
 
-tbc
+Copy this example and connect it to your own BigQuery Data Table: https://datastudio.google.com/reporting/93f7383a-10e4-4340-a278-931cee27d7fa
+![img.png](data-studio-example.png)
