@@ -19,14 +19,19 @@ The ideas and benefits of it are presented in this article:
 1. Have Git installed on your machine https://git-scm.com/downloads
 2. For local runs & tests, you nodeJS, Python 3.9 (3.6-3.10 should also work) and an IDE (recommended: PyCharm)
 3. Install the Google Cloud SDK CLI (see: https://cloud.google.com/sdk)
-4. Authenticate Google Cloud SDK CLI: `gcloud auth login --update-adc`
+4. Open a PyCharm terminal and authenticate Google Cloud SDK CLI: `gcloud auth login --update-adc`
+5. Set your Project ID: `gcloud config set project <your-project-id>`
+6. Open `datalayer_tests/log_datalayer_error.py`. PyCharm will ask you (yellow bar on top) to configure a Python
+   interpreter and virtual environment. Make sure you add a **new** "local interpreter", don't use an existing one! Do
+   NOT inherit global site packages!
+7. Install the required Python packages via clicking the PyCharm prompt or by running `pip install -r requirements.txt`
+   in the console.
 
-## 2. Fork the GitHub repo and do configurations
+## 2. Fork the GitHub repo
 
 1. Go to https://github.com/loldenburg/datalayertests-gcp
 2. Click on "Fork" and fork the project. You now have your own GitHub repository with a copy of the code.
    ![Fork Project](fork-project.png)
-3. Open the `datalayer_tests/log_datalayer_error.py` file and follow the "TODO" comments in there
 
 ## 3. Set up Google Cloud Project components
 
@@ -39,8 +44,7 @@ The ideas and benefits of it are presented in this article:
        overview page.
 
 2. Go to **Secret Manager** and enable the Secret Manager API:
-    1. In Secret Manager, create a secret called `data-layer-tests-gcf-token` with the value of the GCF token set
-       earlier in Tealium Functions.
+    1. In Secret Manager, create a secret called `data-layer-tests-gcf-token` with a secret value of your choice.
        This will be used to authenticate the data layer error log cloud function. It has to be part of your Tealium
        Function
        request to the Cloud Function.
@@ -90,7 +94,6 @@ The ideas and benefits of it are presented in this article:
     gcloud builds submit --substitutions="_SERVICE_NAME=data-layer-tests-handler,_REGION=us-central1,_ENTRY_POINT=main_handler,_ERROR_LOG_TOKEN_SECRET_NAME=data-layer-tests-gcf-token,_ERROR_LOG_TOKEN_SECRET_VERSION=1" --project="<your-project-id>"
     ```
 
-
 4. Go to **Firestore**
     1. Select Native Mode
     2. Region: nam5 (United States) "multi-region" (or the same region where your cloud function runs)
@@ -98,7 +101,7 @@ The ideas and benefits of it are presented in this article:
     4. Name the collection "dataLayerErrorLogs"
     5. Delete the document again that Google creates automatically (click the three dots next to it and then "delete")
 
-5. **Make your Function public**:
+5. **Make your Cloud Function public**:
     1. Go to [Cloud Functions](https://console.cloud.google.com/functions).
     2. Check the "Authenticated" column for your newly created function. If it does not
        have `"Allow unauthenticated"` written in it, click on the checkbox to the left of the function and then on "
@@ -112,12 +115,18 @@ The ideas and benefits of it are presented in this article:
     2. Click on "Trigger"
     3. Copy the Trigger URL
 
-7. Update URL & Code in **Tealium Functions**
-    1. Edit Function -> Global Variables
-    2. Create a new variable called "urlGCF" and set the value to the Cloud Function Trigger URL from step 5.3
-    3. Uncomment the rows below `// UNCOMMENT THIS IF YOU HAVE YOUR OWN GCLOUD CONNECTION`
-    4. Save the function
-    5. Publish your Tealium CDH profile!
+## 4. Configure the code
+
+Open the `datalayer_tests/log_datalayer_error.py` file and follow the "TODO" comments in there (apart from those
+regarding BigQuery, which we will tackle later).
+
+## 5. Update URL & Code in Tealium Functions
+
+1. Go into your **Tealium** Function code -> Edit Function -> Global Variables
+2. Create a new variable called "urlGCF" and set the value to the Cloud Function Trigger URL we got earlier
+3. Create a new variable called "tokenGCF" and set the value to the secret you created in Secret Manager earlier.
+4. Go to the JS code and uncomment the rows below `// UNCOMMENT THIS IF YOU HAVE YOUR OWN GCLOUD CONNECTION`
+5. Save the function and publish your Tealium CDH profile! Done!
 
 If you want to monitor your data with BigQuery and Data Studio, you can additionally follow the steps below.
 
@@ -161,5 +170,7 @@ CREATE TABLE IF NOT EXISTS
 
 ### Data Studio
 
-Copy this example and connect it to your own BigQuery Data Table: https://datastudio.google.com/reporting/93f7383a-10e4-4340-a278-931cee27d7fa
+Copy this example (https://datastudio.google.com/reporting/93f7383a-10e4-4340-a278-931cee27d7fa) and connect it to your own BigQuery data: 
+1. Resources -> Manage Added Data Sources 
+2. Change to your GCP Project's BigQuery table
 ![img.png](data-studio-example.png)

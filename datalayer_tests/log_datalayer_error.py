@@ -7,7 +7,7 @@
 #   If you want to use another table ID, provide them in the environment variable `BQ_DATALAYER_ERRORS_TABLE_ID`.
 #   Value has to be in format `your-project.your_data_set.your_table`.
 
-big_query_enabled = True  # TODO set this to True after configuring the BQ integration
+big_query_enabled = False  # TODO set this to True after configuring the BQ integration
 
 import time
 from datetime import timedelta, timezone, date
