@@ -11,12 +11,14 @@ big_query_enabled = True  # TODO set this to True after configuring the BQ integ
 
 import time
 from datetime import timedelta, timezone, date
-from logging import Logger
-from typing import Optional
 from json import loads
+from logging import Logger
 from os import environ
+from typing import Optional
+
 from google.api_core.datetime_helpers import DatetimeWithNanoseconds
 from google.cloud import bigquery
+
 from firestore import FireRef
 from logs import get_logger
 
@@ -60,7 +62,7 @@ def run_script(payload=None):
                              "missing")  # TODO change to your preferred user ID for debugging (by default: Tealium Cookie ID)
     url_full = data_layer.get("url_full", "url_full missing")  # todo change to the UDO variable that contains the URL
     prod_id = data_layer.get("prod_id",
-                             [])  # TODO change to the UDO variable that contains the product ID (or leave out)
+                             [])  # TODO change to the UDO variable that contains the product ID (or leave as is if you don't have one)
     prod_id = safe_get_index(prod_id, 0, None)
     tealium_profile = data_layer.get("tealium_profile", "missing")
     logged_at = DatetimeWithNanoseconds.now(timezone.utc)
@@ -72,12 +74,16 @@ def run_script(payload=None):
     msg = f"Error Log ID: {log_id},\nEvent: {event_name},\nURL: {url_full},\nUser ID: {user_id},\n"
     error_types = []
     error_vars = []
+    error_messages = []
     for error_type in error_data:
         msg += f"Errors of type: {error_type}\n"  # eg "populatedAndOfType"
         error_types.append(error_type)
         for error in error_data[error_type]:
-            msg += f"{error.get('var', 'var missing')}: {error.get('message', 'message missing')}\n"
-            error_vars.append(error.get('var', 'var missing'))
+            error_var = error.get("var", "var missing")
+            error_msg = error.get("message", "msg missing")
+            msg += f"{error_var}: {error_msg}\n"
+            error_vars.append(error_var)
+            error_messages.append(error_msg)
 
     log().info(msg)
     # log().info(f"Full Data Layer: \n{data_layer}")
@@ -101,14 +107,12 @@ def run_script(payload=None):
     FireRef.collectionDynamic("dataLayerErrorLogs").document(log_id).set(firedoc)
     log().info(f"Stored Data Layer and Error Data to Firestore document ID {log_id}")
 
-    # write some error meta info to BigQuery for Monitoring Dashboard
+    # ---- write some error meta info to BigQuery for Monitoring Dashboard
+    if big_query_enabled is False:
+        return "done"
 
     project_id = environ.get("GCP_PROJECT_ID", "missing")
     table_id = environ.get("BQ_DATALAYER_ERRORS_TABLE_ID", f"{project_id}.datalayer_errors.datalayer_error_logs")
-
-    # write to bigquery if enabled
-    if big_query_enabled is False:
-        return "done"
 
     client = bigquery.Client()
 
