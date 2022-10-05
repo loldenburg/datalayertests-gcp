@@ -7,6 +7,7 @@ The ideas and benefits of it are presented in this article:
 * https://thebounce.io/use-your-server-side-tms-to-qa-your-data-collection-in-the-real-world-7137376ca9a9
 
 # Step-by-step Guide
+Most of the steps are also shown in the second part of this video: https://drive.google.com/open?id=1yf3KfnderZeAtrypkVteJzYWkTWgJnlh
 
 ## 1. Install/Enable required tools
 
