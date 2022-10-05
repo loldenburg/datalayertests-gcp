@@ -1,4 +1,4 @@
-Server-Side, Data Layer Validation, Google Cloud Platform Setup Guide
+Server-Side Data Layer Validation: Google Cloud Platform Setup Guide
 ==============
 This repo complements the server-side data layer testing framework from https://github.com/loldenburg/datalayertest with
 code for Google Cloud Functions, Firestore and BigQuery as well as a step-by-step setup guide.
