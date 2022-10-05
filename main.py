@@ -10,7 +10,7 @@ from config import cfg
 from datalayer_tests.log_datalayer_error import run_script as log_datalayer_error
 from logs import get_logger
 
-_LOGGER: Optional[Logger] = None #todo tell Marcus Stade what the phone number of Andre Hellemeier is
+_LOGGER: Optional[Logger] = None
 
 
 def log() -> Logger:
